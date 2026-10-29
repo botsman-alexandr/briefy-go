@@ -56,14 +56,10 @@ func run() {
 		return
 	}
 
-	exe, err := os.Executable()
-	if err != nil {
-		return
-	}
-	base := filepath.Dir(exe)
+	base := resolveBaseDir()
 	logDir := filepath.Join(base, "briefly_logs")
 	dbFile := filepath.Join(logDir, "db.json")
-	brieflyFile := filepath.Join(base, "BRIEFLY.md")
+	brieflyFile := filepath.Join(base, "BRIFLY.md")
 
 	_ = os.MkdirAll(logDir, 0o755)
 
@@ -95,6 +91,21 @@ func run() {
 		return
 	}
 	_, _ = os.Stdout.Write(b)
+}
+
+// base dir: рядом с exe (собираем); при go run exe в %TEMP%, там нет BRIFLY.md — fallback на ~/.gigacode/hooks/briefly-go
+func resolveBaseDir() string {
+	exe, err := os.Executable()
+	if err == nil {
+		dir := filepath.Dir(exe)
+		if _, err := os.Stat(filepath.Join(dir, "BRIFLY.md")); err == nil {
+			return dir
+		}
+	}
+	if home, err := os.UserHomeDir(); err == nil {
+		return filepath.Join(home, ".gigacode", "hooks", "briefly-go")
+	}
+	return "."
 }
 
 func buildContext(cfg brieflyConfig, turn int) string {
